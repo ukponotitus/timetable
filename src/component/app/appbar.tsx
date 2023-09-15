@@ -18,134 +18,39 @@ import MoreIcon from '@mui/icons-material/MoreVert';
 import theme from '@/theme/Theme';
 import Link from 'next/link';
 import DropDownButton from '../common/dropdown/dropdown';
+import { Button, Stack } from '@mui/material';
+import { contextProvider } from '@/context/auth';
+import { ITimetableFilter } from '@/lib/interfaces/filter';
 // import SearchIcon from '@mui/icons-material/Search';
 
-const Search = styled('div')(({ theme }) => ({
-  position: 'relative',
-  borderRadius: theme.shape.borderRadius,
-  backgroundColor: alpha(theme.palette.common.white, 0.15),
-  '&:hover': {
-    backgroundColor: alpha(theme.palette.common.white, 0.25),
-  },
-  marginRight: theme.spacing(2),
-  marginLeft: 0,
-  width: '100%',
-  [theme.breakpoints.up('sm')]: {
-    marginLeft: theme.spacing(3),
-    width: 'auto',
-  },
-}));
+interface AppBarprops {
+  home:string,
+  logout:string,
+  login:string,
+  setFilter: React.Dispatch<React.SetStateAction<ITimetableFilter>>
+}
 
-const SearchIconWrapper = styled('div')(({ theme }) => ({
-  padding: theme.spacing(0, 2),
-  height: '100%',
-  position: 'absolute',
-  pointerEvents: 'none',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-}));
-
-const StyledInputBase = styled(InputBase)(({ theme }) => ({
-  color: 'inherit',
-  '& .MuiInputBase-input': {
-    padding: theme.spacing(1, 1, 1, 0),
-    // vertical padding + font size from searchIcon
-    paddingLeft: `calc(1em + ${theme.spacing(4)})`,
-    transition: theme.transitions.create('width'),
-    width: '100%',
-    [theme.breakpoints.up('md')]: {
-      width: '20ch',
-    },
-    // color:theme.palette.secondary.light
-  },
-}));
-
-
-export default function TableAppBar() {
+export default function TableAppBar(props: AppBarprops) {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [mobileMoreAnchorEl, setMobileMoreAnchorEl] =
     React.useState<null | HTMLElement>(null);
-
-  const isMenuOpen = Boolean(anchorEl);
-  const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
-
+    const [selectedIndex, setSelectedIndex] = React.useState(1);
+    const {islLoggedIn, logout} = contextProvider();
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
-
   const handleMobileMenuClose = () => {
     setMobileMoreAnchorEl(null);
   };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    handleMobileMenuClose();
+  const handleLogut=(event: React.MouseEvent)=>{
+    event.preventDefault();
+    logout()
+  }
+  const handleDropDownChange = (index: number) => {
+    setSelectedIndex(index);
+    props.setFilter((filter)=> ({...filter, programme:index}))
+    
   };
-
-  const handleMobileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setMobileMoreAnchorEl(event.currentTarget);
-  };
-
-  const menuId = 'primary-search-account-menu';
-  const renderMenu = (
-    <Menu
-      anchorEl={anchorEl}
-      anchorOrigin={{
-        vertical: 'top',
-        horizontal: 'right',
-      }}
-      id={menuId}
-      keepMounted
-      transformOrigin={{
-        vertical: 'top',
-        horizontal: 'right',
-      }}
-      open={isMenuOpen}
-      onClose={handleMenuClose}
-    >
-      <MenuItem onClick={handleMenuClose}>Logut</MenuItem>
-      <MenuItem onClick={handleMenuClose}>My account</MenuItem>
-    </Menu>
-  );
-
-  const mobileMenuId = 'primary-search-account-menu-mobile';
-  const renderMobileMenu = (
-    <Menu
-      anchorEl={mobileMoreAnchorEl}
-      anchorOrigin={{
-        vertical: 'top',
-        horizontal: 'right',
-      }}
-      id={mobileMenuId}
-      keepMounted
-      transformOrigin={{
-        vertical: 'top',
-        horizontal: 'right',
-      }}
-      open={isMobileMenuOpen}
-      onClose={handleMobileMenuClose}
-    >
-      <MenuItem>
-        <Typography>Home</Typography>
-      </MenuItem>
-      <MenuItem>
-        <Typography>AboutUs</Typography>
-      </MenuItem>
-      <MenuItem onClick={handleProfileMenuOpen}>
-        <IconButton
-          size="large"
-          aria-label="account of current user"
-          aria-controls="primary-search-account-menu"
-          aria-haspopup="true"
-          color="inherit"
-        >
-          <AccountCircle />
-        </IconButton>
-        <p>Profile</p>
-      </MenuItem>
-    </Menu>
-  );
 
   return (
     <Box sx={{ flexGrow: 1 }}>
@@ -164,30 +69,49 @@ export default function TableAppBar() {
             noWrap
             component="div"
             sx={{ display: { xs: 'none', sm: 'block' }, 
-            ml:"10%",
+            ml:{md:"10%", xs:"0px"},
              color:theme.palette.secondary.main,
              mr: { md: "", xs: 10, sm: 20 },
              flexGrow: 1,}}
           >
            Computer Science Departments TimeTable
           </Typography>
-          <DropDownButton />
-          <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
-            <IconButton
-              size="large"
-              aria-label="show more"
-              aria-controls={mobileMenuId}
-              aria-haspopup="true"
-              onClick={handleMobileMenuOpen}
-              color="inherit"
-            >
-              <MoreIcon />
-            </IconButton>
+          <Stack direction="row" justifyContent="space-between" sx={{ml:{md:"0", xs:"35%"}}}>
+            <Box>
+              <Link href="/admin">
+              <Typography sx={{color:theme.palette.secondary.main, mt:"5px",
+            ml:{md:"0", xs:"0px"}}}>{props.home}</Typography>
+              </Link>
+            </Box>
+          <Box>
+            {islLoggedIn ?(
+              <Button
+              onClick={handleLogut}
+               sx={{mx:"10px",
+            color:theme.palette.secondary.main}}>{props.logout}</Button>
+
+            ):(
+              <Link href="/login">
+              <Button
+              sx={{
+                color:theme.palette.secondary.main
+              }}>
+                {props.login}
+              </Button>
+              </Link>
+              // <Typography sx={{color:"black", mr:"10px"}}>Not Logged in</Typography>
+            )}
           </Box>
+          <Box>
+          <DropDownButton onDropDownChange={handleDropDownChange}  />  
+          
+          </Box>
+
+          </Stack>
         </Toolbar>
       </AppBar>
-      {renderMobileMenu}
-      {renderMenu}
+      {/* {renderMobileMenu} */}
+      {/* {renderMenu} */}
     </Box>
   );
 }

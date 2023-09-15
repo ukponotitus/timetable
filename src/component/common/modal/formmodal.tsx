@@ -12,13 +12,15 @@ import Typography from "@mui/material/Typography";
 import CloseIcon from "@mui/icons-material/Close";
 import Slide from "@mui/material/Slide";
 import { TransitionProps } from "@mui/material/transitions";
-import { ICode, IModal, ISlot, IVenue } from "@/lib/interfaces/modal";
+import { ICode, IModal, ISecondForm, ISlot, IVenue } from "@/lib/interfaces/modal";
 import {
   Box,
   Grid,
   InputAdornment,
   Link,
   MenuItem,
+  Select,
+  SelectChangeEvent,
   Stack,
   TextField,
 } from "@mui/material";
@@ -26,32 +28,18 @@ import theme from "@/theme/Theme";
 import TableAppBar from "@/component/app/appbar";
 import Chip from "@mui/material/Chip";
 import Autocomplete from "@mui/material/Autocomplete";
-import {IoMdAdd} from 'react-icons/io'
+import { IoMdAdd } from 'react-icons/io'
 import ClassesPage from "@/component/common/classes/classes";
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, ReactNode } from 'react'
+import CourseModal from "./coursemodal";
+import { IForm, IFormFirst, IFormData, IFormItem, ISection, ISingleConfigCreate, ISingleConfigGet, } from "@/lib/interfaces/form";
+import CreateTimeTable from "../form/form";
+import { useCreateForm } from "@/hooks/mutation/createResources";
+import { useGetResources } from "@/hooks/query/getdata";
+import { useCreateConfig } from "@/hooks/mutation/createconfig";
+import { useRouter } from "next/router";
 
-const VenueCode: readonly IVenue[] = [
-  { Venue: "LAP102", id: 1 },
-  { Venue: "COM103", id: 2 },
-  { Venue: "EEE101", id: 3 },
-  { Venue: "PAD104", id: 4 },
-  { Venue: "BAM101", id: 5 },
-  { Venue: "STA102", id: 6 },
-];
-const CourseCode: readonly ICode[] = [
-  { Code: "Sta102", id: 1 },
-  { Code: "COM103", id: 2 },
-  { Code: "EED101", id: 3 },
-  { Code: "COM101", id: 4 },
-  { Code: "COM102", id: 5 },
-  { Code: "STA102", id: 6 },
-];
-const Slot: readonly ISlot[] = [
-  { Slot: "8AM-10AM", id: 1 },
-  { Slot: "10AM-12PM", id: 2 },
-  { Slot: "12PM-2PM", id: 3 },
-  { Slot: "2PM-4PM", id: 4 },
-];
+
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
@@ -61,30 +49,169 @@ const Transition = React.forwardRef(function Transition(
 ) {
   return <Slide direction="down" ref={ref} {...props} />;
 });
-
-export default function FormModal(props: IModal) {
-  const { open, onClose } = props;
-  const [state, setState] = useState(false)
-  const afterFirstRender = useRef(false);
-  
-  const handleClick = () => {
-    setState(true);
-  };
-
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     setState(true);
-  //   }, 1000); // Change the interval duration as needed
-
-  //   return () => {
-  //     clearInterval(interval);
-  //   };
-  // }, []);
-
+interface Props extends IModal<IFormFirst> {
+  firstForm: IFormFirst,
  
-  
-  
 
+  // data: IFormItem
+}
+interface FormItems {
+  [key: string]: IFormItem[]
+}
+
+export default function FormModal(props: Props) {
+  const { open, onClose, firstForm } = props;
+  console.log({firstForm})
+  const { mutate: timetable } = useCreateForm({ onSuccess: () => { } })
+  const { data: days } = useGetResources<ISection>("day")
+  const router= useRouter()
+  const {mutate: addday} = useCreateConfig<ISingleConfigCreate, ISingleConfigGet>({onSuccess: () => { }},  "day")
+
+  // console.log(firstForm)
+  const [selectedDay, setSelectedDay] = useState(0)
+  const [selectDay, setSelectDay] = useState<ISection | undefined>()
+  const [formItems, setFormItems] = useState<FormItems>({})
+  const afterFirstRender = useRef(false);
+  // const [receivedData, setReceivedData] =/ React.useState([]);
+  // useEffect(() => {
+  //   const keys = Object.keys(formItems)
+  //   if (!keys.length && days) {
+  //     setFormItems(days.reduce<FormItems>((total, item) => {
+  //       total[item.id] = [{
+  //         day: item.id,
+  //         course: 0,
+  //         venue: 0,
+  //         slot: 0,
+  //       }]
+  //       // console.log({total})
+  //       return total
+  //     }, {}))
+  //   }
+  //   console.log({formItems})
+
+  // }, [days])
+
+  useEffect(()=>{
+      const daysname = days?.find((item)=> item.id == selectedDay)
+      if(daysname){
+        setSelectDay({...daysname})
+      }
+  }, [selectedDay])
+  const handleUpdate = (index: number, data: { name: string, value: number }) => {
+    const items = formItems[selectedDay]
+    console.log({items, selectedDay})
+    items[index] = { ...items[index], [data.name as keyof IFormItem]: data.value }
+    setFormItems({ ...formItems, [selectedDay]: items })
+    console.log({formItems})
+  }
+
+  useEffect(() => {
+    if(!selectedDay){
+      return 
+    }
+    if (!formItems[selectedDay]) {
+      setFormItems({
+        ...formItems,
+        [selectedDay]: [
+          {
+            day: selectedDay,
+            course: 0,
+            venue: 0,
+            slot: 0,
+          },
+        ],
+      });
+    }
+  }, [selectedDay, formItems]);
+  
+  
+  
+  // function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
+  //   const { name, value } = event.target;
+  //   setSecondForm({ ...secondForm, [name]: value })
+  //   console.log(secondForm)
+  // }
+
+  const [formData, setFormData] = useState<IFormData>({
+    section: firstForm?.section,
+    programme: firstForm?.programme,
+    semester: firstForm?.semester,
+    items: [],
+  });
+
+  useEffect(() => {
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      section: firstForm?.section,
+      programme: firstForm?.programme,
+      semester: firstForm?.semester,
+    }));
+  }, [firstForm]);
+
+  // submit function
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    console.log("çourse==>", e.currentTarget.course.value)
+    // console.log(secondForm)
+    const allItems: IFormItem[] = []
+    Object.keys(formItems).forEach((key=>{
+      console.log("formItem", formItems[key], {key})
+      const displayItem = formItems[key].some((item) => Object.values(item).some((value)=>value == 0))
+      if(displayItem){
+
+        return 
+      }
+      console.log({displayItem})
+      allItems.push(...formItems[key])
+    }))
+    const combinedFormData = {
+      ...formData, 
+      items:allItems
+    };
+    console.log("Combined Form Data:", allItems);
+
+    timetable(combinedFormData);
+    router.push("/admin")
+  }
+  // display of classes
+  const handleAdd = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const items = formItems[selectedDay]
+    // console.log({items, selectedDay})
+    // items[index] = { ...items[index], [data.name as keyof IFormItem]: data.value }
+    if (items.length < 4) {
+
+      const newItem = {
+        day: selectedDay,
+        course: 0,
+        venue: 0,
+        slot: 0,
+      };
+      const newArray = [...items, newItem];
+      console.log({newArray, items, formItems})
+      setFormItems({ ...formItems, [selectedDay]: newArray })
+    } else {
+      alert("classes can only be 4")
+    }
+  };
+  // to delete a class
+  const handleDelete = (index: number) => {
+    let delArray = formItems[selectedDay]
+    // if (delArray.length > 1) {
+      delArray.splice(index, 1);
+      setFormItems({ ...formItems, [selectedDay]: delArray });
+    // } else {
+    //   alert("Cannot delete the last item.");
+    // }
+
+  }
+
+  const handleEdit=(e: React.MouseEvent <Element, MouseEvent>,  item: ISection)=>{
+    e.stopPropagation()
+  }
+  const handleDeleteDay = (e: React.MouseEvent <Element, MouseEvent>, item: ISection)=>{
+    e.stopPropagation()
+
+  }
   return (
     <Box>
       <Dialog
@@ -94,7 +221,7 @@ export default function FormModal(props: IModal) {
             height: "471px",
             borderRadius: "8px",
             background: theme.palette.secondary.light,
-            mt:"5%",
+            mt: "5%",
           },
         }}
         fullScreen
@@ -102,17 +229,10 @@ export default function FormModal(props: IModal) {
         onClose={onClose}
         TransitionComponent={Transition}
       >
-        <Box sx={{mx:"px"}}>
-          <Stack component="form">
-            <Stack
-              direction="row"
-              justifyContent="space-around"
-              sx={{ color: theme.palette.secondary.main, mt: "35px" }}
-            >
-              <Typography>Section: 2022/2023</Typography>
-              <Typography>Programme:HND11</Typography>
-              <Typography>Date:17th APRIL, 2023</Typography>
-            </Stack>
+        <Box sx={{ mx: "px" }}>
+          <Stack component="form"
+            onSubmit={handleSubmit}
+          >
             <Grid container spacing={2} sx={{ px: "40px", mt: "20px" }}>
               <Grid item md={12} py={{ xs: "1.40vw", md: "1.04vw" }}>
                 <Typography
@@ -121,96 +241,108 @@ export default function FormModal(props: IModal) {
                     color: theme.palette.secondary.main,
                   }}
                 >
-                  select Day
+                  Select Day
                 </Typography>
-                <TextField
-                  name="role"
-                  select
+                <Select
+                  name="day"
+                  onChange={(e)=>setSelectedDay(Number(e.target.value))}
                   size="small"
                   fullWidth
                   placeholder="select Day"
                   variant="outlined"
-                  InputProps={{
-                    disableUnderline: true,
-                    startAdornment: (
-                      <InputAdornment position="start"></InputAdornment>
-                    ),
-                  }}
+                  renderValue={(value: ReactNode)=>{
+                    console.log(selectDay)
+                  return <Typography> {selectDay?.name} </Typography>
+                }}
                 >
-                  <MenuItem value={"HOD"}>MON</MenuItem>
-                  <MenuItem value={" Student"}>TUE</MenuItem>
-                  <MenuItem value={"Timetable Officer"}>WED</MenuItem>
-                  <MenuItem value={"Timetable Officer"}>THUR</MenuItem>
-                  <MenuItem value={"Timetable Officer"}>FRI</MenuItem>
-                </TextField>
+                 {
+                    days?.map((item: ISection, index: any)=>(
+                      <MenuItem key={item.id} value={item.id}>
+                  <Stack >
+                      {item.name}
+                    </Stack>
+                      {/* <Box>
+                      <Button onClick={(e)=>handleEdit(e, item)}>Edit</Button>
+                    <Button onClick={(e)=>handleDeleteDay(e, item)} >Delete</Button>
+                    </Box> */}
+                      </MenuItem>
+                    ))
+                  }
+                  {/* <IconButton
+                  // onClick={handleSubModal}
+                  sx={{fontSize:"18px"}}>Add Day</IconButton> */}
+
+                </Select>
               </Grid>
             </Grid>
-
-                  <Box sx={{mx:"40px", 
-                 border:" 1px solid gray",
-                 mt:"30px",
-                 px:"px"
-                }}>
-                   <Typography sx={{mt:"-20px"}}>Set Classes</Typography>
+                  {formItems[selectedDay] ?
+            <Box sx={{
+              mx: "40px",
+              border: " 1px solid gray",
+              mt: "30px",
+              px: "px"
+            }}>
+              <Typography sx={{ mt: "-20px" }}>Set Classes</Typography>
+              <Box>
+                {
+                 formItems[selectedDay]?.map((display, index) => {
+                    return <><ClassesPage
+                      key={display.course}
+                      display={display}
+                      index={index}
+                      onChange={handleUpdate}
+                    /><Box>
+                        <Button onClick={() => handleDelete(index)}>delete classs</Button>
+                      </Box></>
+                  })
+                }
+                {/* <Link href="component/common/classes/classes"> */}
+                <Button
+                  onClick={handleAdd}
+                  sx={{
+                    mt: "60px",
+                    color: theme.palette.secondary.main,
+                    width: { md: "50%", xs: "50%" },
+                    borderRadius: "10px",
+                    mx: "auto",
+                    ml: { md: "23%" },
+                    mb: "30px"
+                  }}>
+                  <IoMdAdd />
+                  Add classes</Button>
+              </Box>
+            </Box>:(<></>)
+                  }
             <Box>
-            <ClassesPage  />
             </Box>
             <Box>
-            <ClassesPage  />
-            </Box>
-                <Box>
-                {state && <ClassesPage  />}
-                </Box>
-
-            <Box>
-              {/* <Link href="component/common/classes/classes"> */}
-              <Button 
-              onClick={handleClick}
-               sx={{
-                // background: theme.palette.primary.main,
-                // ":hover": {
-                //   background: theme.palette.primary.main,
-                // },
-                mt: "60px",
-                color: theme.palette.secondary.main,
-                width: { md: "50%", xs: "50%" },
-                borderRadius: "10px",
-                mx: "auto",
-                ml: { md: "23%" },
-                mb:"30px"
-              }}>
-                <IoMdAdd />
-                Add more classes</Button>
-              {/* </Link> */}
-            </Box>
             </Box>
             <Box>
-              <Link href="/admin">
               <Button
+                type="submit"
                 sx={{
                   background: theme.palette.primary.main,
                   ":hover": {
                     background: theme.palette.primary.main,
                   },
                   mt: "60px",
-                  color: theme.palette.secondary.main,
+                  color: theme.palette.secondary.light,
                   width: { md: "50%", xs: "50%" },
                   borderRadius: "10px",
                   mx: "auto",
                   ml: { md: "23%" },
-                  mb:"30px",
+                  mb: "30px",
                   padding: "14px 16px",
-                  justifyContent:" center",
-                  alignItems:" center",
+                  justifyContent: " center",
+                  alignItems: " center",
                   gap: "10px",
                 }}
               >
                 Save
               </Button>
-              </Link>
-              {/* <RoundButton> Login </RoundButton> */}
             </Box>
           </Stack>
+
         </Box>
       </Dialog>
     </Box>

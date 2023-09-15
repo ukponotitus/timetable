@@ -9,24 +9,28 @@ import Popper from '@mui/material/Popper';
 import MenuItem from '@mui/material/MenuItem';
 import MenuList from '@mui/material/MenuList';
 import theme from '@/theme/Theme';
+import { ISection } from '@/lib/interfaces/form';
+import { useGetResources } from '@/hooks/query/getdata';
 
-const options = ['ND1', 'ND2', 'HND1', 'HND11'];
+// const options = ['ND1', 'ND2', 'HND1', 'HND11'];
 
-export default function DropDownButton() {
+export default function DropDownButton({ onDropDownChange }:any) {
   const [open, setOpen] = React.useState(false);
   const anchorRef = React.useRef<HTMLDivElement>(null);
-  const [selectedIndex, setSelectedIndex] = React.useState(1);
+  const [selectedIndex, setSelectedIndex] = React.useState<ISection | undefined>();
+  const {data: options}= useGetResources<ISection>("programme")
 
   const handleClick = () => {
-    console.info(`You clicked ${options[selectedIndex]}`);
+    // console.info(`You clicked ${options[selectedIndex]}`);
   };
 
   const handleMenuItemClick = (
     event: React.MouseEvent<HTMLLIElement, MouseEvent>,
     index: number,
   ) => {
-    setSelectedIndex(index);
+    setSelectedIndex(options?.find((item)=>item.id == index));
     setOpen(false);
+    onDropDownChange(index);
   };
 
   const handleToggle = () => {
@@ -54,7 +58,7 @@ export default function DropDownButton() {
         }}>
         <Button onClick={handleClick} sx={{
             color:theme.palette.secondary.light,
-        }}>{options[selectedIndex]}</Button>
+        }}>{selectedIndex?.name}</Button>
         <Button
           size="small"
           aria-controls={open ? 'split-button-menu' : undefined}
@@ -90,17 +94,17 @@ export default function DropDownButton() {
             <Paper>
               <ClickAwayListener onClickAway={handleClose}>
                 <MenuList id="split-button-menu" autoFocusItem>
-                  {options.map((option, index) => (
+                  {options?.map((option, index) => (
                     <MenuItem
-                      key={option}
+                      key={option.id}
                     //   disabled={index === 2}
-                      selected={index === selectedIndex}
-                      onClick={(event) => handleMenuItemClick(event, index)}
+                      selected={option.id === selectedIndex}
+                      onClick={(event) => handleMenuItemClick(event, option.id)}
                       sx={{
                         color:theme.palette.secondary.main,
                       }}
                     >
-                      {option}
+                      {option.name}
                     </MenuItem>
                   ))}
                 </MenuList>

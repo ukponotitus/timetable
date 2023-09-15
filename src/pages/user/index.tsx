@@ -3,15 +3,29 @@ import UserDashboardLayout from "@/layout/homepage"
 import { Box, Stack, Typography } from "@mui/material"
 import theme from "@/theme/Theme"
 // import BasicTabl
-import BasicTable from "@/component/tabel/table"
+import AdminTable from "@/component/tabel/admin"
+import React from "react"
+import { useGetTimeTableApi } from "@/hooks/query/gettimetable"
+import { ITimetableFilter } from "@/lib/interfaces/filter"
+// import BasicTable from "@/component/tabel/table"
 
 
+interface ChangingComponent{
+    selectedIndex : number;
+  }
 
+export default function HomePage({selectedIndex}: ChangingComponent){
+    const [ filter, setFilter] = React.useState<ITimetableFilter>({})
+    const {data: timetable} = useGetTimeTableApi(filter)
+    const current = timetable?.[0]
 
-export default function HomePage(){
+    function formatDate(date: string):string{
+        const formattedDate = new Date(date).toLocaleString(); 
+        return formattedDate;
+      }
     return(
         <>
-        <UserDashboardLayout>
+        <UserDashboardLayout setFilter={setFilter}>
             <Box 
             sx={{
                 pt:"5%" }}>
@@ -21,19 +35,19 @@ export default function HomePage(){
                     mt:"50px",
                     textAlign:"center"
                 }}>
-                    Provisional Lecture Time Table For Rain Semester
+                    Provisional Lecture Time Table For  {current?.semester?.name}
                 </Typography>
                 <Stack direction="row" justifyContent="space-around" sx={{color:theme.palette.secondary.light,
                 mt:"35px"}}>
-                    <Typography>Section:</Typography>
-                    <Typography>Programme:</Typography>
-                    <Typography>Date:</Typography>
+                    <Typography>Section:{current?.section?.name}</Typography>
+                    <Typography>Programme:{current?.programme?.name}</Typography>
+                    <Typography>Date:{formatDate(current?.created_at )}</Typography>
                 </Stack>
             </Box>
             <Box
             sx={{
                 pt:"30px" }}>
-                <BasicTable />  
+                <AdminTable timetable={timetable}  />  
             </Box>
 
             

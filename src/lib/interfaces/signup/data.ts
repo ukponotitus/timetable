@@ -1,6 +1,6 @@
 export interface ISignUp{
-    id:string,
-    passowrd:string,
-    role: string,
+    email:string,
+    password:string,
+    user_type: string,
     option: string,
 }

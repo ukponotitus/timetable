@@ -11,7 +11,6 @@ export interface IAPIFilter {
   
   export interface IQueryArgs<IArg, IReturn> {
     key: [string, IAPIFilter?];
-  
     callback: (arg?:unknown) => Promise<IReturn>;
   }
   

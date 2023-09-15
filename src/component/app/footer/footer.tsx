@@ -20,7 +20,7 @@ const Footer = () => {
         window.scrollTo({top: 0, left: 0, behavior: 'smooth'});
       }, []);
   return (
-    <Box>
+    <Box sx={{mt:"30px"}}>
       <Typography sx={{
         color:theme.palette.primary.main,
         pt:"3%",

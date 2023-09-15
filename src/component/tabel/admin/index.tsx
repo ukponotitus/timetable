@@ -8,79 +8,51 @@ import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import theme from '@/theme/Theme';
 import { Box, Stack } from '@mui/material';
+import { useGetTimeTableApi } from '@/hooks/query/gettimetable';
+import { IFormItem, ISection, ITimetabel, IFormTimetable } from '@/lib/interfaces/form';
+import { useGetResources } from '@/hooks/query/getdata';
+import { ViewDayRounded } from '@mui/icons-material';
+import { slotShouldForwardProp } from '@mui/material/styles/styled';
 
-interface createData{
-  courseDesc:string,
-courseid: string,
-time: string,
-venueid: string,
-id: number,
+interface Timetableitems{
+  [key:string]:
+  {[key:string]:IFormTimetable}
+
 }
-const rows : createData[]=[
-  {
-    courseDesc:"INTRO TO COMPUTER",
-    courseid:"com101",
-    time:"8-10AM",
-    venueid:"LAB101",
-    id: 1,
-  },
-  {
-    courseDesc:"Intro to STATISTICS",
-    courseid:"com101",
-    time:"10-12pM",
-    venueid:"BLG101",
-    id: 1,
-  },
-  // {
-  //   courseid:"com201",
-  //   time:"8-10AM",
-  //   venueid:"LAB101",
-  //   id: 2,
-  // },
-  // {
-  //   courseid:"com201",
-  //   time:"8-10AM",
-  //   venueid:"LAB101",
-  //   id: 3,
-  // },
-  // {
-  //   courseid:"com201",
-  //   time:"8-10AM",
-  //   venueid:"LAB101",
-  //   id: 4,
-  // },
-  // {
-  //   courseid:"com201",
-  //   time:"8-10AM",
-  //   venueid:"LAB101",
-  //   id: 5,
-  // },
-]
-// ) {
-//   return { date, courseid, time,  venueid, id };
-// }
+interface Props{
+  timetable?:ITimetabel[];
+}
+export default function AdminTable({timetable}: Props) {
+  
+    // console.log("timetable", {timetable})
+    const { data: days } = useGetResources<ISection>("day")
+    const { data: slots } = useGetResources<ISection>("slot")
+    const [newTimetable, setNewTimetabel] = React.useState<Timetableitems>({})
 
-// const rows = [
-//   createData("MON", "com201", "8-10AM", "LAB101", 1),
-//   createData("TUE", "com101", "10-12PM", "PAD201", 2),
-//   createData("WED", "COM102", "12-2PM", "EEE101", 3),
-//   createData("THUR", "com201", "2-4PM", "LAB201", 4),
-//   createData("FRI", "com301", "8-10AM",  "BAM101", 5),
-// ];
-// courseid:"CSE101",
-// venueid:"LAP201",
-// date:"MON",
-// time:"8-10am",
-// id:
-
-export default function AdminTable() {
+    React.useEffect(()=>{
+      if (timetable && days) {
+        setNewTimetabel(timetable[0]?.items.reduce<Timetableitems>((total, item) => {
+          const current = total[item.day.name] || {}
+          total[item.day.name] ={
+            ...current,
+            [item.slot.name]:{...item}
+          }
+          console.log({item, total})
+          return total
+        }, {}))
+      }
+      // console.log(ITimetabel)
+    }, [days,timetable])
+    // console.log({newTimetable})
+    
   return (
     <TableContainer component={Paper} 
     sx={{background:theme.palette.secondary.light,
     // color:theme.palette.secondary.light,
     color:"#FFFFFF",
     mx:"auto",
-    width:"100%"
+    width:"100%",
+    mb:"30px"
 }}
     >
       <Table sx={{ minWidth: 650 }} aria-label="simple table">
@@ -94,13 +66,52 @@ export default function AdminTable() {
           </TableRow>
         </TableHead>
         <TableBody>
-          {rows.map((row, id) => (
+          {slots?.map((slot: ISection) => (
             <TableRow
-              key={row.id}
+              key={slot.id}
               sx={{ '&:last-child td, &:last-child th': { border: 0,} }}
             >
+              {days?.map((day)=>{
+                const item = newTimetable?.[day.name]?.[slot.name]
+                return item ? <TableCell key={item.id} sx={{color: "white",  background:"#0A6EBD"  }}>
+                  <Box sx={{fontSize:"16px", fontWeight:600, }}>
+                {item.course.name}
+                </Box >
+                <Box sx={{fontSize:"16px",  fontWeight:600,}}>
+                {item.course.code}
+                </Box>
+                <Box sx={{fontSize:"16px", mt:"10px", fontWeight:600,}}>
+                {item.slot.name}
+                </Box>
+                <Box>
+                {item.venue.code}
+                </Box>
+                </TableCell>:<TableCell></TableCell>
+        })}
+          {/* {days?.map((day: ISection) => (
+            <TableRow
+              key={day.id}
+              sx={{ '&:last-child td, &:last-child th': { border: 0,} }}
+            >
+              {slots?.map((slot)=>{
+                const item = newTimetable[day.id]?.[slot.id]
+                return item ? <TableCell key={item.id}>
+                      <Box sx={{fontSize:"16px", fontWeight:600, }}>
+                {item.course.name}
+                </Box >
+                <Box sx={{fontSize:"16px",  fontWeight:600,}}>
+                {item.course.code}
+                </Box>
+                <Box sx={{fontSize:"16px", mt:"10px", fontWeight:600,}}>
+                {item.slot.name}
+                </Box>
+                <Box>
+                {item.venue.code}
+                </Box>
+                </TableCell>:null
+        })} */}
               {/* mon */}
-              <TableCell sx={{color: "white", background:"#068FFF",   }} >
+              {/* <TableCell sx={{color: "white", background:"#068FFF",   }} >
               <Box sx={{fontSize:"16px", fontWeight:600, }}>
                 {row.courseDesc}
                 </Box >
@@ -113,9 +124,9 @@ export default function AdminTable() {
                 <Box>
                 {row.venueid}
                 </Box>
-                </TableCell>
+                </TableCell> */}
             {/* tues */}
-                <TableCell sx={{color: "white",  background:"#0A6EBD"  }} >
+                {/* <TableCell sx={{color: "white",  background:"#0A6EBD"  }} >
                 <Box sx={{fontSize:"16px", fontWeight:600, }}>
                 {row.courseDesc}
                 </Box>
@@ -128,9 +139,9 @@ export default function AdminTable() {
                 <Box >
                 {row.venueid}
                 </Box>
-                </TableCell>
+                </TableCell> */}
               {/* wed */}
-                <TableCell sx={{color: "white",  background:"#19A7CE"  }} >
+                {/* <TableCell sx={{color: "white",  background:"#19A7CE"  }} >
                 <Box sx={{fontSize:"16px", fontWeight:600, }}>
                 {row.courseDesc}
                 </Box>
@@ -143,9 +154,9 @@ export default function AdminTable() {
                 <Box>
                 {row.venueid}
                 </Box>
-                </TableCell>
+                </TableCell> */}
                 {/* thurs */}
-                <TableCell sx={{color: "white",  background:"#3A98B9"  }} >
+                {/* <TableCell sx={{color: "white",  background:"#3A98B9"  }} >
                 <Box sx={{fontSize:"16px", fontWeight:600, }}>
                 {row.courseDesc}
                 </Box>
@@ -158,9 +169,9 @@ export default function AdminTable() {
                 <Box>
                 {row.venueid}
                 </Box>
-                </TableCell>
+                </TableCell> */}
                 {/* fri */}
-                <TableCell sx={{color: "white",  background:"#146C94"  }} >
+                {/* <TableCell sx={{color: "white",  background:"#146C94"  }} >
                 <Box sx={{fontSize:"16px", fontWeight:600, }}>
                 {row.courseDesc}
                 </Box>
@@ -173,11 +184,15 @@ export default function AdminTable() {
                 <Box>
                 {row.venueid}
                 </Box>
-                </TableCell>
+                </TableCell> */}
             </TableRow>
           ))}
         </TableBody>
       </Table>
     </TableContainer>
   );
+}
+
+function setFormItems(arg0: any) {
+  throw new Error('Function not implemented.');
 }

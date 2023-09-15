@@ -7,13 +7,19 @@ import { Visibility, VisibilityOff } from "@mui/icons-material";
 import RoundButton from "@/component/common/button/roundbutton";
 import Link from "next/link";
 import mobile from '../../../images/mobile.jpg'
+import { contextProvider } from "@/context/auth";
+import { ISignUp } from "@/lib/interfaces/signup/data";
 // import {makeStyles} from "@mui/material/styles";
+import CircularProgress from "@mui/material/CircularProgress";
 
 
 export default function SignUpPage(){
-    const[data, setData]= React.useState({id:"", password:"", role:"", option:""})
+  const {UserSignUp} = contextProvider();
+    const[data, setData]= React.useState<ISignUp>({email:"", password:"", user_type:"", option:""})
     const [showPassword, setShowPassword] = React.useState(false);
     const handleClickShowPassword = () => setShowPassword((show) => !show);
+    const [loading, setLoading] = React.useState(false)
+    const [error, setError] = React.useState("");
 
     
     const handleMouseDownPassword = (
@@ -26,9 +32,22 @@ export default function SignUpPage(){
             setData({...data, [name]:value})
 
         }
-        const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
             event.preventDefault();
-            console.log(data)
+            try {
+              setLoading(true);
+             await UserSignUp(data)
+              // Perform your async operation, e.g., API call
+              // await yourAsyncFunction(data);
+              setLoading(false);
+            } catch (e: any) {
+              // console.log(error)
+              setError(e.message);
+              setLoading(false);
+              // Handle the error
+            }
+            // UserSignUp(data)
+            // console.log(data)
         }
     
     return(
@@ -60,14 +79,15 @@ export default function SignUpPage(){
                   position:"fixed",
                   mx:"auto",
                   textAlign:"center",
-                  width:{md:"40%", xs:"80%"}
+                  width:{md:"40%", xs:"80%"},
+                  pl:{md:"0px", xs:"10px"},
                     }}>
                    <Typography
                 // mt={{ xs: "3.00vw", md: "20px" }}
                 component="p"
                 sx={{
                   fontWeight: "400",
-                  fontSize: "20px",
+                  fontSize:{md:"20px", xs:"15px"},
                   color: "#FFFFFF",
                 }}
               >
@@ -82,11 +102,11 @@ export default function SignUpPage(){
                 color: "#FFFFFF",
                 cursor: "pointer",
                 fontWeight: "400",
-                fontSize: "20px",
+                fontSize: {md:"20px", xs:"15px"},
               }}
             >
               Dont Have An Account?{" "}
-              <span style={{ fontWeight: "900" }}>Login </span>
+              <span style={{ fontWeight: "400" }}>Login </span>
             </Typography>
           </Link>
             </Box>
@@ -109,9 +129,9 @@ export default function SignUpPage(){
              sx={{
                  width: "100%",}}>
             <OutlinedInput
-             placeholder=" Enter your id number"
-             name="id"
-             value={data.id}
+             placeholder=" Enter your email"
+             name="email"
+             value={data.email}
              onChange={handleChange}
              size="small"
              sx={{
@@ -166,16 +186,16 @@ export default function SignUpPage(){
                     <Typography sx={{
                         textAlign:"left",
                         color:theme.palette.secondary.light,
-                    }}>select your role</Typography>
+                    }}>select your Role</Typography>
                   <TextField
                   size="small"
-                    value={data.role}
+                    value={data.user_type}
                     onChange={handleChange}
-                    name="role"
+                    name="user_type"
                     select
                     fullWidth
             //   disableUnderline
-              placeholder="select ypur Role"
+              placeholder="select your Role"
             //   label="select your Role"
               variant="standard"
               InputProps={{
@@ -188,11 +208,11 @@ export default function SignUpPage(){
                 color:theme.palette.secondary.light
             }} 
             >
-              <MenuItem value={"HOD"}>
-                HOD
+              <MenuItem value={"hod"}>
+               hod
               </MenuItem>
-              <MenuItem value={"Timetable Officer"}>
-                Timetable Officer
+              <MenuItem value={"exam_officer"}>
+              exam_officer
               </MenuItem>
             </TextField>
                 </Box>
@@ -200,10 +220,18 @@ export default function SignUpPage(){
                 <Typography sx={{
                    ml:"50%",
                    color:theme.palette.secondary.light,
-                   mt:"5px",
+                   mt:{md:"5px", xs:"10px"},
+                   fontSize:{md:"20px", xs:"14px"},
 
                 }}>forgotten password</Typography>
             </Stack>
+            {loading ?(
+              <Box>
+
+                <CircularProgress />
+              </Box>)
+              :(
+
             <Box>
                 <Button
                 type="submit"
@@ -220,6 +248,7 @@ export default function SignUpPage(){
                 }} 
                 >SignUp</Button>
             </Box>
+              )}
             </Stack>
             </Box>
 
@@ -227,3 +256,5 @@ export default function SignUpPage(){
         </>
     )
 }
+
+
